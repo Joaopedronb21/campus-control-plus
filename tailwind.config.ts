@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Cores personalizadas para o sistema escolar
+				school: {
+					primary: '#1e40af', // azul profissional
+					secondary: '#059669', // verde educacional
+					accent: '#7c3aed', // roxo moderno
+					warning: '#f59e0b', // amarelo para alertas
+					danger: '#dc2626', // vermelho para notas baixas
+					success: '#10b981', // verde para aprovação
 				}
 			},
 			borderRadius: {
@@ -84,11 +94,26 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'slide-in': {
+					'0%': { transform: 'translateX(-100%)' },
+					'100%': { transform: 'translateX(0)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'slide-in': 'slide-in 0.3s ease-out'
+			},
+			backgroundImage: {
+				'gradient-school': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+				'gradient-success': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+				'gradient-warning': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
 			}
 		}
 	},

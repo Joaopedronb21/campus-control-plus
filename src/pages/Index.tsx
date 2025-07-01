@@ -1,14 +1,27 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useAuth } from '@/components/AuthContext';
+import LoginForm from '@/components/LoginForm';
+import AdminDashboard from '@/components/AdminDashboard';
+import ProfessorDashboard from '@/components/ProfessorDashboard';
+import AlunoDashboard from '@/components/AlunoDashboard';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const { user } = useAuth();
+
+  if (!user) {
+    return <LoginForm />;
+  }
+
+  switch (user.role) {
+    case 'admin':
+      return <AdminDashboard />;
+    case 'professor':
+      return <ProfessorDashboard />;
+    case 'aluno':
+      return <AlunoDashboard />;
+    default:
+      return <div>Tipo de usuário não reconhecido</div>;
+  }
 };
 
 export default Index;
