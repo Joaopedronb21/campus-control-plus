@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { BookOpen, Mail, Lock, Users } from 'lucide-react';
+import SignupForm from './SignupForm';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showSignup, setShowSignup] = useState(false);
   const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +39,29 @@ const LoginForm = () => {
     { email: 'professor@escola.com', role: 'Professor', icon: '👩‍🏫' },
     { email: 'aluno@escola.com', role: 'Aluno', icon: '👨‍🎓' }
   ];
+
+  if (showSignup) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          {/* Logo e Título */}
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-4 rounded-2xl shadow-xl">
+                <BookOpen className="h-12 w-12 text-white" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold gradient-text">Campus Control Plus</h1>
+              <p className="text-gray-600 mt-2">Sistema de Controle Escolar</p>
+            </div>
+          </div>
+
+          <SignupForm onBackToLogin={() => setShowSignup(false)} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
@@ -102,6 +127,16 @@ const LoginForm = () => {
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
+
+            <div className="mt-4 text-center">
+              <Button 
+                variant="link" 
+                onClick={() => setShowSignup(true)}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Não tem conta? Cadastre-se aqui
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
