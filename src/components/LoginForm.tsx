@@ -18,27 +18,35 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const success = await login(email, password);
+    console.log('Form submitted with:', { email, password });
     
-    if (success) {
+    if (!email || !password) {
       toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao Campus Control Plus",
-      });
-    } else {
-      toast({
-        title: "Erro no login",
-        description: "Email ou senha incorretos",
+        title: "Erro",
+        description: "Email e senha são obrigatórios",
         variant: "destructive",
       });
+      return;
+    }
+    
+    const success = await login(email, password);
+    
+    if (!success) {
+      console.log('Login failed for:', email);
     }
   };
 
   const mockAccounts = [
-    { email: 'admin@escola.com', role: 'Administrador', icon: '👨‍💼' },
-    { email: 'professor@escola.com', role: 'Professor', icon: '👩‍🏫' },
-    { email: 'aluno@escola.com', role: 'Aluno', icon: '👨‍🎓' }
+    { email: 'admin@escola.com', role: 'Administrador', icon: '👨‍💼', password: '123456' },
+    { email: 'professor@escola.com', role: 'Professor', icon: '👩‍🏫', password: '123456' },
+    { email: 'aluno@escola.com', role: 'Aluno', icon: '👨‍🎓', password: '123456' }
   ];
+
+  const handleMockLogin = (mockEmail: string, mockPassword: string) => {
+    setEmail(mockEmail);
+    setPassword(mockPassword);
+    console.log('Mock account selected:', mockEmail);
+  };
 
   if (showSignup) {
     return (
@@ -148,7 +156,7 @@ const LoginForm = () => {
               Contas de Demonstração
             </CardTitle>
             <CardDescription>
-              Clique em uma conta para fazer login automaticamente
+              Clique em uma conta para preencher os campos automaticamente
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -156,19 +164,22 @@ const LoginForm = () => {
               <Button
                 key={index}
                 variant="outline"
-                className="w-full justify-start gap-3 h-12"
-                onClick={() => {
-                  setEmail(account.email);
-                  setPassword('123456');
-                }}
+                className="w-full justify-start gap-3 h-auto p-4"
+                onClick={() => handleMockLogin(account.email, account.password)}
               >
                 <span className="text-xl">{account.icon}</span>
-                <div className="text-left">
+                <div className="text-left flex-1">
                   <div className="font-medium">{account.role}</div>
                   <div className="text-sm text-gray-500">{account.email}</div>
+                  <div className="text-xs text-gray-400">Senha: {account.password}</div>
                 </div>
               </Button>
             ))}
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Dica:</strong> Após preencher os campos, clique em "Entrar" para fazer login.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

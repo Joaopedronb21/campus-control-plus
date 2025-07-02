@@ -33,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Current session:', session);
         if (session?.user) {
           await fetchUserProfile(session.user);
         }
@@ -47,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session);
       if (event === 'SIGNED_IN' && session?.user) {
         await fetchUserProfile(session.user);
       } else if (event === 'SIGNED_OUT') {
@@ -60,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (authUser: SupabaseUser) => {
     try {
+      console.log('Fetching profile for user:', authUser.id);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -68,10 +71,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Error fetching profile:', error);
+        // Se não encontrar o perfil, criar um baseado nos metadados
+        const userData = authUser.user_metadata || {};
+        const newProfile = {
+          id: authUser.id,
+          name: userData.name || authUser.email?.split('@')[0] || 'Usuário',
+          email: authUser.email || '',
+          role: (userData.role as UserRole) || 'aluno'
+        };
+        
+        // Tentar criar o perfil
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(newProfile);
+          
+        if (!insertError) {
+          setUser(newProfile);
+        }
         return;
       }
 
       if (profile) {
+        console.log('Profile found:', profile);
         setUser({
           id: profile.id,
           name: profile.name,
@@ -89,15 +110,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      console.log('Attempting login for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
+        console.error('Login error:', error);
         toast({
           title: "Erro no login",
-          description: error.message,
+          description: error.message === 'Invalid login credentials' 
+            ? 'Email ou senha incorretos' 
+            : error.message,
           variant: "destructive"
         });
         setIsLoading(false);
@@ -105,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
+        console.log('Login successful for user:', data.user.id);
         await fetchUserProfile(data.user);
         toast({
           title: "Login realizado",
