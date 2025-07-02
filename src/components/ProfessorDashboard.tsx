@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +8,13 @@ import {
   FileText, 
   Calendar,
   CheckCircle,
-  XCircle,
   Clock,
   TrendingUp,
-  QrCode,
   Upload
 } from 'lucide-react';
+import QRCodeGenerator from './QRCodeGenerator';
+import GradeManager from './GradeManager';
+import AttendanceManager from './AttendanceManager';
 
 const ProfessorDashboard = () => {
   const stats = [
@@ -69,10 +69,7 @@ const ProfessorDashboard = () => {
           <p className="text-gray-600 mt-1">Gerencie suas turmas e atividades</p>
         </div>
         <div className="flex gap-2">
-          <Button className="school-button">
-            <QrCode className="h-4 w-4 mr-2" />
-            Gerar QR Code
-          </Button>
+          <QRCodeGenerator />
           <Button variant="outline">
             <Upload className="h-4 w-4 mr-2" />
             Exportar Notas
@@ -214,21 +211,11 @@ const ProfessorDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Registrar Presença
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Lançar Notas
-            </Button>
+            <AttendanceManager />
+            <GradeManager />
             <Button className="w-full justify-start" variant="outline">
               <Calendar className="h-4 w-4 mr-2" />
               Agendar Prova
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <QrCode className="h-4 w-4 mr-2" />
-              Gerar QR Code
             </Button>
           </CardContent>
         </Card>

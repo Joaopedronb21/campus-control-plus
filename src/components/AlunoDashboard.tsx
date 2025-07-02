@@ -1,7 +1,5 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -11,11 +9,11 @@ import {
   Award,
   Clock,
   FileText,
-  QrCode,
   Bell,
   CheckCircle,
   AlertTriangle
 } from 'lucide-react';
+import QRScanner from './QRScanner';
 
 const AlunoDashboard = () => {
   const stats = [
@@ -68,10 +66,7 @@ const AlunoDashboard = () => {
           <p className="text-gray-600 mt-1">Acompanhe seu desempenho acadêmico</p>
         </div>
         <div className="flex gap-2">
-          <Button className="school-button">
-            <QrCode className="h-4 w-4 mr-2" />
-            Registrar Presença
-          </Button>
+          <QRScanner />
         </div>
       </div>
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,11 +9,11 @@ import {
   FileText, 
   TrendingUp, 
   Calendar,
-  UserPlus,
   Settings,
   BarChart3,
   AlertTriangle
 } from 'lucide-react';
+import UserManager from './UserManager';
 
 const AdminDashboard = () => {
   const stats = [
@@ -32,7 +31,6 @@ const AdminDashboard = () => {
   ];
 
   const quickActions = [
-    { title: 'Cadastrar Professor', icon: UserPlus, description: 'Adicionar novo professor ao sistema' },
     { title: 'Criar Turma', icon: BookOpen, description: 'Configurar nova turma e matérias' },
     { title: 'Gerar Relatório', icon: BarChart3, description: 'Relatórios de desempenho e frequência' },
     { title: 'Configurações', icon: Settings, description: 'Configurar sistema e permissões' },
@@ -47,7 +45,8 @@ const AdminDashboard = () => {
           <p className="text-gray-600 mt-1">Visão geral do sistema escolar</p>
         </div>
         <div className="flex gap-2">
-          <Button className="school-button">
+          <UserManager />
+          <Button variant="outline">
             <Calendar className="h-4 w-4 mr-2" />
             Agendar Reunião
           </Button>
