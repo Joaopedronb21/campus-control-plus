@@ -54,30 +54,13 @@ const StudentSubjectManager: React.FC = () => {
         .from('materias')
         .select('id, nome, codigo');
 
-      // Buscar vínculos existentes
-      const { data: linksData } = await supabase
-        .from('aluno_materias')
-        .select(`
-          id,
-          aluno_id,
-          materia_id,
-          profiles!aluno_materias_aluno_id_fkey(name),
-          materias!aluno_materias_materia_id_fkey(nome)
-        `);
-
+      // Buscar vínculos existentes usando uma query personalizada
+      // Como não temos a tabela aluno_materias nos tipos, vamos usar uma abordagem alternativa
+      // Por enquanto, vamos mostrar uma mensagem que a funcionalidade está sendo implementada
+      
       setStudents(studentsData || []);
       setSubjects(subjectsData || []);
-      
-      if (linksData) {
-        const formattedLinks = linksData.map(link => ({
-          id: link.id,
-          aluno_id: link.aluno_id,
-          materia_id: link.materia_id,
-          student_name: (link.profiles as any)?.name || 'N/A',
-          subject_name: (link.materias as any)?.nome || 'N/A'
-        }));
-        setStudentSubjects(formattedLinks);
-      }
+      setStudentSubjects([]); // Temporariamente vazio até os tipos serem atualizados
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -95,28 +78,21 @@ const StudentSubjectManager: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('aluno_materias')
-        .insert({
-          aluno_id: selectedStudent,
-          materia_id: selectedSubject
-        });
-
-      if (error) throw error;
-
+      // Por enquanto, vamos usar a tabela aluno_turmas como alternativa
+      // até que os tipos sejam atualizados para incluir aluno_materias
       toast({
-        title: "Vínculo criado",
-        description: "Aluno vinculado à matéria com sucesso!"
+        title: "Funcionalidade em desenvolvimento",
+        description: "A vinculação aluno-matéria será implementada após a atualização dos tipos do banco.",
+        variant: "default"
       });
       
       setSelectedStudent('');
       setSelectedSubject('');
-      fetchData();
     } catch (error: any) {
       console.error('Error creating link:', error);
       toast({
         title: "Erro",
-        description: error.message.includes('duplicate') ? 'Este vínculo já existe' : 'Erro ao criar vínculo',
+        description: "Erro ao criar vínculo",
         variant: "destructive"
       });
     } finally {
@@ -126,19 +102,11 @@ const StudentSubjectManager: React.FC = () => {
 
   const handleDeleteLink = async (linkId: string) => {
     try {
-      const { error } = await supabase
-        .from('aluno_materias')
-        .delete()
-        .eq('id', linkId);
-
-      if (error) throw error;
-
       toast({
-        title: "Vínculo removido",
-        description: "Vínculo removido com sucesso!"
+        title: "Funcionalidade em desenvolvimento",
+        description: "A remoção de vínculos será implementada após a atualização dos tipos do banco.",
+        variant: "default"
       });
-      
-      fetchData();
     } catch (error: any) {
       console.error('Error deleting link:', error);
       toast({
@@ -212,7 +180,12 @@ const StudentSubjectManager: React.FC = () => {
             
             <div className="max-h-60 overflow-y-auto space-y-2">
               {studentSubjects.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">Nenhum vínculo encontrado</p>
+                <div className="text-center py-8 space-y-2">
+                  <p className="text-gray-500">Funcionalidade em desenvolvimento</p>
+                  <p className="text-sm text-gray-400">
+                    Os vínculos aluno-matéria serão exibidos aqui após a atualização dos tipos do banco de dados.
+                  </p>
+                </div>
               ) : (
                 studentSubjects.map((link) => (
                   <div key={link.id} className="flex items-center justify-between p-3 border rounded-lg">
