@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { useAuth } from './AuthContext';
 import { FileText } from 'lucide-react';
 
@@ -42,12 +42,9 @@ const GradeManager: React.FC = () => {
     const fetchTurmas = async () => {
       if (!user) return;
       
-      const { data, error } = await supabase
-        .from('turmas')
-        .select('id, nome')
-        .eq('professor_id', user.id);
+      const result = await mockApi.select('turmas', 'id, nome', { professor_id: user.id });
 
-      if (error) {
+      if (result.error) {
         toast({
           title: "Erro",
           description: "Erro ao carregar turmas",
@@ -56,7 +53,7 @@ const GradeManager: React.FC = () => {
         return;
       }
 
-      setTurmas(data || []);
+      setTurmas(result.data || []);
     };
 
     fetchTurmas();
@@ -67,12 +64,9 @@ const GradeManager: React.FC = () => {
     const fetchAlunos = async () => {
       if (!selectedTurma) return;
 
-      const { data, error } = await supabase
-        .from('alunos')
-        .select('id, name')
-        .eq('turma_id', selectedTurma);
+      const result = await mockApi.select('alunos', 'id, name', { turma_id: selectedTurma });
 
-      if (error) {
+      if (result.error) {
         toast({
           title: "Erro",
           description: "Erro ao carregar alunos",
@@ -81,7 +75,7 @@ const GradeManager: React.FC = () => {
         return;
       }
 
-      setAlunos(data || []);
+      setAlunos(result.data || []);
     };
 
     fetchAlunos();
@@ -111,9 +105,9 @@ const GradeManager: React.FC = () => {
         data: new Date().toISOString()
       };
 
-      const { error } = await supabase.from('notas').insert(grade);
+      const result = await mockApi.insert('notas', grade);
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       toast({
         title: "Sucesso",

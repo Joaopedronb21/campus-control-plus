@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { UserPlus } from 'lucide-react';
 
 const UserManager: React.FC = () => {
@@ -29,19 +29,17 @@ const UserManager: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Simular criação de usuário
+      const userId = Date.now().toString();
+      
+      const result = await mockApi.insert('profiles', {
+        id: userId,
+        name,
         email,
-        password,
-        options: {
-          data: {
-            name,
-            role
-          }
-        }
+        role
       });
 
-      if (authError) throw authError;
+      if (result.error) throw result.error;
 
       toast({
         title: "Usuário criado",

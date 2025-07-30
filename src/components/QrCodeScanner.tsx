@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { QrCode } from 'lucide-react';
 import { useAuth } from './AuthContext';
 
@@ -16,19 +16,19 @@ const QrCodeScanner = () => {
 
     try {
       // Verificar se o QR code é válido e ativo
-      const { data: qrData } = await supabase
-        .from('qr_codes_presenca')
-        .select('*')
-        .eq('codigo', qrCode)
-        .eq('ativo', true)
-        .single();
+      const qrResult = await mockApi.select('qr_codes_presenca', '*', { 
+        codigo: qrCode, 
+        ativo: true 
+      });
 
-      if (!qrData) {
+      if (!qrResult.data || qrResult.data.length === 0) {
         throw new Error('QR Code inválido ou expirado');
       }
 
+      const qrData = qrResult.data[0];
+
       // Registrar presença
-      const { error } = await supabase.from('presencas').insert({
+      const presencaResult = await mockApi.insert('presencas', {
         aluno_id: user.id,
         materia_id: qrData.materia_id,
         turma_id: qrData.turma_id,
@@ -37,7 +37,7 @@ const QrCodeScanner = () => {
         qr_code_usado: true
       });
 
-      if (error) throw error;
+      if (presencaResult.error) throw presencaResult.error;
 
       toast({
         title: "Presença registrada",

@@ -11,12 +11,39 @@ export default defineConfig({
     },
   },
   server: {
-    port: 8080,
+    port: 5173,
     host: true,
-    strictPort: true,
   },
   build: {
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      external: [
+        'fs',
+        'path',
+        'os',
+        'crypto',
+        'child_process',
+        'util',
+        'events',
+        'stream',
+        'url',
+        'assert',
+        'sqlite3',
+        'sqlite',
+        'bcrypt'
+      ]
+    }
   },
+  optimizeDeps: {
+    exclude: [
+      'sqlite3',
+      'sqlite',
+      'bcrypt',
+      '@mapbox/node-pre-gyp'
+    ]
+  },
+  define: {
+    global: 'globalThis'
+  }
 });

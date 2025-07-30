@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -16,6 +16,8 @@ import {
 import QRScanner from './QRScanner';
 
 const AlunoDashboard = () => {
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  
   const stats = [
     { title: 'Frequência Geral', value: '92%', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
     { title: 'Média Geral', value: '8.4', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -63,10 +65,12 @@ const AlunoDashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Meu Dashboard</h1>
-          <p className="text-gray-600 mt-1">Acompanhe seu desempenho acadêmico</p>
-        </div>
         <div className="flex gap-2">
-          <QRScanner />
+          <QRScanner 
+            isOpen={isQRScannerOpen} 
+            onClose={() => setIsQRScannerOpen(false)} 
+          />
+        </div>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { useAuth } from './AuthContext';
-import { useToast } from './ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -28,42 +28,36 @@ const StudentSubjectManager: React.FC = () => {
   const fetchData = async () => {
     try {
       // Buscar alunos
-      const { data: studentsData } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('role', 'aluno');
+      const studentsResult = await mockApi.select('profiles', 'id, name, email', { role: 'aluno' });
 
       if (!user?.id) {
-        setStudents(studentsData || []);
+        setStudents(studentsResult.data || []);
         setSubjects([]);
         return;
       }
 
-      // Buscar matérias e notas do aluno
-      const { data: enrollments, error } = await supabase
-        .from('materias')
-        .select(`
-          id,
-          nome,
-          codigo,
-          notas(nota),
-          presencas(presente)
-        `)
-        .eq('presencas.aluno_id', user.id);
+      // Buscar matérias
+      const materiasResult = await mockApi.select('materias', 'id, nome, codigo');
 
-      if (error) throw error;
+      // Buscar notas do aluno
+      const notasResult = await mockApi.select('notas', '*', { aluno_id: user.id });
 
-      const processedSubjects = enrollments?.map(subject => {
-        const notas = subject.notas || [];
-        const presencas = subject.presencas || [];
+      // Buscar presenças do aluno
+      const presencasResult = await mockApi.select('presencas', '*', { aluno_id: user.id });
+
+      const processedSubjects = materiasResult.data?.map(subject => {
+        const notas = notasResult.data?.filter(n => n.materia_id === subject.id) || [];
+        const presencas = presencasResult.data?.filter(p => p.materia_id === subject.id) || [];
         
         // Calcular média das notas
-        const mediaNotas = notas.reduce((acc, curr) => acc + curr.nota, 0) / (notas.length || 1);
+        const mediaNotas = notas.length > 0 
+          ? notas.reduce((acc, curr) => acc + curr.nota, 0) / notas.length
+          : 0;
         
         // Calcular frequência
         const totalAulas = presencas.length;
         const aulasPresente = presencas.filter(p => p.presente).length;
-        const frequencia = (aulasPresente / totalAulas) * 100;
+        const frequencia = totalAulas > 0 ? (aulasPresente / totalAulas) * 100 : 0;
 
         return {
           id: subject.id,
@@ -74,7 +68,7 @@ const StudentSubjectManager: React.FC = () => {
         };
       }) || [];
 
-      setStudents(studentsData || []);
+      setStudents(studentsResult.data || []);
       setSubjects(processedSubjects);
       setStudentSubjects([]); // Temporariamente vazio até os tipos serem atualizados
     } catch (error) {

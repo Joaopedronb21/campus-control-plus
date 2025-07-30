@@ -4,7 +4,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { Users, BookOpen, GraduationCap, BarChart3, Calendar, Bell, Settings, FileText, PlusCircle } from 'lucide-react';
 import UserManager from './UserManager';
 import StudentSubjectManager from './StudentSubjectManager';
@@ -28,11 +28,12 @@ const AdminDashboard: React.FC = () => {
   const handleCreateMateria = async () => {
     setIsMateriaLoading(true);
     try {
-      const { error } = await supabase.from('materias').insert([
-        { nome: materiaNome, codigo: materiaCodigo }
-      ]);
-      if (error) {
-        toast({ title: "Erro", description: error.message || "Erro ao criar matéria", variant: "destructive" });
+      const result = await mockApi.insert('materias', {
+        nome: materiaNome,
+        codigo: materiaCodigo
+      });
+      if (result.error) {
+        toast({ title: "Erro", description: result.error.message || "Erro ao criar matéria", variant: "destructive" });
       } else {
         toast({ title: "Matéria criada", description: "Matéria cadastrada com sucesso!" });
         setMateriaNome('');
@@ -47,11 +48,12 @@ const AdminDashboard: React.FC = () => {
   const handleCreateTurma = async () => {
     setIsTurmaLoading(true);
     try {
-      const { error } = await supabase.from('turmas').insert([
-        { nome: turmaNome, serie: turmaSerie }
-      ]);
-      if (error) {
-        toast({ title: "Erro", description: error.message || "Erro ao criar turma", variant: "destructive" });
+      const result = await mockApi.insert('turmas', {
+        nome: turmaNome,
+        serie: turmaSerie
+      });
+      if (result.error) {
+        toast({ title: "Erro", description: result.error.message || "Erro ao criar turma", variant: "destructive" });
       } else {
         toast({ title: "Turma criada", description: "Turma cadastrada com sucesso!" });
         setTurmaNome('');

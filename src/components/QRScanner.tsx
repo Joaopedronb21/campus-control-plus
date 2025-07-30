@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from './AuthContext';
-import { findQRCode, createPresenca } from '@/lib/db/models';
+import { findQRCode, createPresenca } from '@/lib/db/models-mock';
 
 interface QRScannerProps {
   isOpen: boolean;

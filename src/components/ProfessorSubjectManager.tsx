@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { GraduationCap, Trash2 } from 'lucide-react';
 
 interface Professor {
@@ -54,48 +54,38 @@ const ProfessorSubjectManager: React.FC = () => {
   const fetchData = async () => {
     try {
       // Buscar professores
-      const { data: professorsData } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .eq('role', 'professor');
+      const professorsResult = await mockApi.select('profiles', 'id, name, email', { role: 'professor' });
 
       // Buscar matérias
-      const { data: subjectsData } = await supabase
-        .from('materias')
-        .select('id, nome, codigo');
+      const subjectsResult = await mockApi.select('materias', 'id, nome, codigo');
 
       // Buscar turmas
-      const { data: classesData } = await supabase
-        .from('turmas')
-        .select('id, nome, serie');
+      const classesResult = await mockApi.select('turmas', 'id, nome, serie');
 
       // Buscar vínculos existentes
-      const { data: linksData } = await supabase
-        .from('professor_materias')
-        .select(`
-          id,
-          professor_id,
-          materia_id,
-          turma_id,
-          profiles!professor_materias_professor_id_fkey(name),
-          materias!professor_materias_materia_id_fkey(nome),
-          turmas!professor_materias_turma_id_fkey(nome, serie)
-        `);
+      const linksResult = await mockApi.select('professor_materias', '*');
 
-      setProfessors(professorsData || []);
-      setSubjects(subjectsData || []);
-      setClasses(classesData || []);
+      setProfessors(professorsResult.data || []);
+      setSubjects(subjectsResult.data || []);
+      setClasses(classesResult.data || []);
       
-      if (linksData) {
-        const formattedLinks = linksData.map(link => ({
-          id: link.id,
-          professor_id: link.professor_id,
-          materia_id: link.materia_id,
-          turma_id: link.turma_id,
-          professor_name: (link.profiles as any)?.name || 'N/A',
-          subject_name: (link.materias as any)?.nome || 'N/A',
-          class_name: `${(link.turmas as any)?.nome || 'N/A'} - ${(link.turmas as any)?.serie || 'N/A'}`
-        }));
+      if (linksResult.data) {
+        // Simular joins com dados locais
+        const formattedLinks = linksResult.data.map(link => {
+          const professor = professorsResult.data?.find(p => p.id === link.professor_id);
+          const subject = subjectsResult.data?.find(s => s.id === link.materia_id);
+          const classItem = classesResult.data?.find(c => c.id === link.turma_id);
+          
+          return {
+            id: link.id,
+            professor_id: link.professor_id,
+            materia_id: link.materia_id,
+            turma_id: link.turma_id,
+            professor_name: professor?.name || 'N/A',
+            subject_name: subject?.nome || 'N/A',
+            class_name: `${classItem?.nome || 'N/A'} - ${classItem?.serie || 'N/A'}`
+          };
+        });
         setProfessorSubjects(formattedLinks);
       }
     } catch (error) {
@@ -115,15 +105,13 @@ const ProfessorSubjectManager: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('professor_materias')
-        .insert({
-          professor_id: selectedProfessor,
-          materia_id: selectedSubject,
-          turma_id: selectedClass
-        });
+      const result = await mockApi.insert('professor_materias', {
+        professor_id: selectedProfessor,
+        materia_id: selectedSubject,
+        turma_id: selectedClass
+      });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       toast({
         title: "Vínculo criado",
@@ -148,12 +136,9 @@ const ProfessorSubjectManager: React.FC = () => {
 
   const handleDeleteLink = async (linkId: string) => {
     try {
-      const { error } = await supabase
-        .from('professor_materias')
-        .delete()
-        .eq('id', linkId);
+      const result = await mockApi.delete('professor_materias', { id: linkId });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       toast({
         title: "Vínculo removido",

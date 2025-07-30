@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 
 interface SignupFormProps {
   onBackToLogin: () => void;
@@ -35,36 +35,24 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
 
     try {
       // Verifica se já existe usuário com o mesmo e-mail
-      const { data: existing, error: fetchError } = await supabase
-        .from('profiles') // Use your actual user table name
-        .select('id')
-        .eq('email', email)
-        .single();
+      const existingResult = await mockApi.select('profiles', 'id', { email });
 
-      if (existing) {
+      if (existingResult.data && existingResult.data.length > 0) {
         throw new Error('Já existe um usuário com este e-mail');
       }
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
 
-      // Cria novo usuário autenticado
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password
-      });
-
-      if (signUpError) throw signUpError;
+      // Simula criação de usuário autenticado
+      const userId = Date.now().toString();
 
       // Insere perfil do usuário na tabela profiles
-      const { error } = await supabase.from('profiles').insert({
+      const insertResult = await mockApi.insert('profiles', {
+        id: userId,
         name,
         email,
-        role,
-        id: signUpData.user?.id // Relaciona o perfil ao usuário autenticado
+        role
       });
 
-      if (error) throw error;
+      if (insertResult.error) throw insertResult.error;
 
       toast({
         title: "Cadastro realizado",

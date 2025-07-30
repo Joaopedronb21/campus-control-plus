@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { useAuth } from './AuthContext';
 import { QrCode } from 'lucide-react';
 
@@ -29,18 +29,17 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ onGenerate }) => {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 2); // Expira em 2 horas
 
-      const { error } = await supabase
-        .from('qr_codes_presenca')
-        .insert({
-          codigo,
-          materia_id: materiaId,
-          turma_id: turmaId,
-          professor_id: user.id,
-          data_aula: new Date().toISOString().split('T')[0],
-          expires_at: expiresAt.toISOString()
-        });
+      const result = await mockApi.insert('qr_codes_presenca', {
+        codigo,
+        materia_id: materiaId,
+        turma_id: turmaId,
+        professor_id: user.id,
+        data_aula: new Date().toISOString().split('T')[0],
+        expires_at: expiresAt.toISOString(),
+        ativo: true
+      });
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       setQrCode(codigo);
       toast({

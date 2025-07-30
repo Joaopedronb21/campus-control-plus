@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from './AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { BookOpen, Mail, Lock, Users } from 'lucide-react';
 import SignupForm from './SignupForm';
 
@@ -13,12 +13,11 @@ const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showSignup, setShowSignup] = useState(false);
-  const { login, isLoading } = useAuth();
+  const { login, loading } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('Form submitted with:', { email, password });
     
     if (!email || !password) {
       toast({
@@ -29,10 +28,14 @@ const LoginForm = () => {
       return;
     }
     
-    const success = await login(email, password);
-    
-    if (!success) {
-      console.log('Login failed for:', email);
+    try {
+      await login(email, password);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Email ou senha inválidos",
+        variant: "destructive",
+      });
     }
   };
 
@@ -45,7 +48,6 @@ const LoginForm = () => {
   const handleMockLogin = (mockEmail: string, mockPassword: string) => {
     setEmail(mockEmail);
     setPassword(mockPassword);
-    console.log('Mock account selected:', mockEmail);
   };
 
   if (showSignup) {
@@ -130,9 +132,9 @@ const LoginForm = () => {
               <Button 
                 type="submit" 
                 className="w-full school-button"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? 'Entrando...' : 'Entrar'}
+                {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
 

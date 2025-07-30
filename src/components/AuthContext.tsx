@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { findUserByEmail } from '@/lib/db/models';
-import { useToast } from './ui/use-toast';
-import bcrypt from 'bcryptjs';
+import { findUserByEmail } from '@/lib/db/models-mock';
+import { useToast } from '@/hooks/use-toast';
 
 type User = {
   id: string;
@@ -35,46 +34,27 @@ function loadSession(): User {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(loadSession);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User>(null);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    checkUser();
+    // Simplify initialization - just check localStorage directly
+    const sessionUser = loadSession();
+    setUser(sessionUser);
+    setLoading(false);
   }, []);
-
-  async function checkUser() {
-    try {
-      const sessionUser = loadSession();
-      
-      if (sessionUser) {
-        setUser(sessionUser);
-      } else {
-        setUser(null);
-        saveSession(null);
-      }
-    } catch (error: any) {
-      console.error('Error checking auth:', error);
-      setUser(null);
-      saveSession(null);
-      toast({
-        title: "Erro",
-        description: "Erro ao verificar autenticação",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function login(email: string, password: string) {
     try {
       const user = await findUserByEmail(email);
-      if (!user) throw new Error('User not found');
       
-      // Add password verification using bcrypt
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) throw new Error('Invalid password');
+      if (!user) throw new Error('Usuário não encontrado');
+      
+      // Simplified password check for demo (use '123456' or 'password' for all users)
+      if (password !== '123456' && password !== 'password') {
+        throw new Error('Senha inválida');
+      }
       
       setUser(user);
       saveSession(user);
@@ -111,44 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// export function useAuth() {
-//   const context = useContext(AuthContext);
-//   if (context === undefined) {
-//     throw new Error('useAuth must be used within an AuthProvider');
-//   }
-//   return context;
-// }
-//   async function logout() {
-//     try {
-//       const { error } = await supabase.auth.signOut();
-//       if (error) throw error;
-      
-//       setUser(null);
-//       saveSession(null);
-//     } catch (error: any) {
-//       console.error('Error logging out:', error);
-//       toast({
-//         title: "Erro",
-//         description: "Erro ao fazer logout",
-//         variant: "destructive"
-//       });
-//     }
-//   }
-
-//   const value = {
-//     user,
-//     login,
-//     logout,
-//     loading
-//   };
-
-//   return (
-//     <AuthContext.Provider value={value}>
-//       {children}
-//     </AuthContext.Provider>
-//   );
-// }
 
 export function useAuth() {
   const context = useContext(AuthContext);

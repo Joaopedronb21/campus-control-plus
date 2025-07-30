@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { mockApi } from '@/lib/mock-api';
 import { Label } from '@/components/ui/label';
 import { QrCode, UserCheck } from 'lucide-react';
 
@@ -33,17 +33,13 @@ const AttendanceManager = () => {
   const fetchTurmasAndMaterias = async () => {
     try {
       // Buscar turmas
-      const { data: turmasData } = await supabase
-        .from('turmas')
-        .select('id, nome');
+      const turmasResult = await mockApi.select('turmas', 'id, nome');
       
       // Buscar matérias
-      const { data: materiasData } = await supabase
-        .from('materias')
-        .select('id, nome');
+      const materiasResult = await mockApi.select('materias', 'id, nome');
 
-      if (turmasData) setTurmas(turmasData);
-      if (materiasData) setMaterias(materiasData);
+      if (turmasResult.data) setTurmas(turmasResult.data);
+      if (materiasResult.data) setMaterias(materiasResult.data);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
     }
@@ -64,16 +60,14 @@ const AttendanceManager = () => {
       const code = `${selectedTurma}-${selectedMateria}-${Date.now()}`;
       
       // Verificar se já existe QR code ativo para esta aula
-      const { data: existingQR } = await supabase
-        .from('qr_codes_presenca')
-        .select('*')
-        .eq('turma_id', selectedTurma)
-        .eq('materia_id', selectedMateria)
-        .eq('data_aula', new Date().toISOString().split('T')[0])
-        .eq('ativo', true)
-        .single();
+      const existingQRResult = await mockApi.select('qr_codes_presenca', '*', {
+        turma_id: selectedTurma,
+        materia_id: selectedMateria,
+        data_aula: new Date().toISOString().split('T')[0],
+        ativo: true
+      });
 
-      if (existingQR) {
+      if (existingQRResult.data && existingQRResult.data.length > 0) {
         toast({
           title: "QR Code já existe",
           description: "Já existe um QR Code ativo para esta aula hoje",
@@ -83,7 +77,7 @@ const AttendanceManager = () => {
       }
 
       // Criar novo QR code
-      const { error } = await supabase.from('qr_codes_presenca').insert({
+      const insertResult = await mockApi.insert('qr_codes_presenca', {
         codigo: code,
         turma_id: selectedTurma,
         materia_id: selectedMateria,
@@ -92,7 +86,7 @@ const AttendanceManager = () => {
         expires_at: new Date(Date.now() + 30 * 60000).toISOString() // Expira em 30 minutos
       });
 
-      if (error) throw error;
+      if (insertResult.error) throw insertResult.error;
 
       setQrCodeValue(code);
       toast({
