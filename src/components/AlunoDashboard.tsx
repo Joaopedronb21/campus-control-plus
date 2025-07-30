@@ -14,6 +14,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import QRScanner from './QRScanner';
+import QrCodeScanner from './QrCodeScanner';
+import StudentSubjectManager from './StudentSubjectManager';
 
 const AlunoDashboard = () => {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
@@ -70,6 +72,8 @@ const AlunoDashboard = () => {
             isOpen={isQRScannerOpen} 
             onClose={() => setIsQRScannerOpen(false)} 
           />
+          <QrCodeScanner />
+          <StudentSubjectManager />
         </div>
         </div>
       </div>

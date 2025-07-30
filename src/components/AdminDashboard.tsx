@@ -9,6 +9,7 @@ import { Users, BookOpen, GraduationCap, BarChart3, Calendar, Bell, Settings, Fi
 import UserManager from './UserManager';
 import StudentSubjectManager from './StudentSubjectManager';
 import ProfessorSubjectManager from './ProfessorSubjectManager';
+import ReportsManager from './ReportsManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AdminDashboard: React.FC = () => {
@@ -132,6 +133,7 @@ const AdminDashboard: React.FC = () => {
               <div className="flex flex-col gap-3">
                 <StudentSubjectManager />
                 <ProfessorSubjectManager />
+                <ReportsManager />
               </div>
             </CardContent>
           </Card>

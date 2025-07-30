@@ -17,6 +17,8 @@ import {
 import QRCodeGenerator from './QRCodeGenerator';
 import GradeManager from './GradeManager';
 import AttendanceManager from './AttendanceManager';
+import AttendanceList from './AttendanceList';
+import ReportsManager from './ReportsManager';
 import { StatsCard } from './dashboard/StatsCard';
 import { PerformanceChart } from './dashboard/PerformanceChart';
 
@@ -279,7 +281,9 @@ const ProfessorDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <AttendanceManager />
+            <AttendanceList />
             <GradeManager />
+            <ReportsManager />
             <Button className="w-full justify-start" variant="outline">
               <Calendar className="h-4 w-4 mr-2" />
               Agendar Prova
