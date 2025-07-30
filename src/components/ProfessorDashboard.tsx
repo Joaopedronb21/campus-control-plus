@@ -10,18 +10,68 @@ import {
   CheckCircle,
   Clock,
   TrendingUp,
-  Upload
+  Upload,
+  GraduationCap,
+  CheckSquare
 } from 'lucide-react';
 import QRCodeGenerator from './QRCodeGenerator';
 import GradeManager from './GradeManager';
 import AttendanceManager from './AttendanceManager';
+import { StatsCard } from './dashboard/StatsCard';
+import { PerformanceChart } from './dashboard/PerformanceChart';
 
 const ProfessorDashboard = () => {
+  const totalAlunos = 147;
+  const novosAlunos = 5;
+  const mediaFrequencia = 92;
+  const taxaAprovacao = 85;
+  const evolucaoMedia = '+12%';
+  
   const stats = [
-    { title: 'Minhas Turmas', value: '6', icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Total de Alunos', value: '147', icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
-    { title: 'Provas Agendadas', value: '8', icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { title: 'Presenças Hoje', value: '89%', icon: CheckCircle, color: 'text-orange-600', bg: 'bg-orange-50' },
+    {
+      title: 'Minhas Turmas',
+      value: '6',
+      icon: BookOpen,
+      colorClass: 'text-blue-500'
+    },
+    {
+      title: 'Total de Alunos',
+      value: totalAlunos,
+      description: `+${novosAlunos} novos este mês`,
+      icon: Users,
+      colorClass: 'text-blue-500'
+    },
+    {
+      title: 'Provas Agendadas',
+      value: '8',
+      icon: FileText,
+      colorClass: 'text-purple-600'
+    },
+    {
+      title: 'Presenças Hoje',
+      value: '89%',
+      icon: CheckCircle,
+      colorClass: 'text-orange-600'
+    },
+    {
+      title: 'Média de Frequência',
+      value: `${mediaFrequencia}%`,
+      icon: CheckSquare,
+      colorClass: 'text-green-500'
+    },
+    {
+      title: 'Taxa de Aprovação',
+      value: `${taxaAprovacao}%`,
+      icon: GraduationCap,
+      colorClass: 'text-purple-500'
+    },
+    {
+      title: 'Evolução Média',
+      value: evolucaoMedia,
+      description: '+12% em relação ao período anterior',
+      icon: TrendingUp,
+      colorClass: 'text-orange-500'
+    }
   ];
 
   const turmas = [
@@ -60,6 +110,22 @@ const ProfessorDashboard = () => {
     { tarefa: 'Atualizar frequências', turma: '1º Ano C', prazo: '1 dia' },
   ];
 
+  const frequencyData = [
+    { date: '2023-11-01', value: 90 },
+    { date: '2023-11-02', value: 85 },
+    { date: '2023-11-03', value: 92 },
+    { date: '2023-11-04', value: 88 },
+    { date: '2023-11-05', value: 95 },
+  ];
+
+  const gradesData = [
+    { date: '2023-11-01', value: 7.5 },
+    { date: '2023-11-02', value: 8.0 },
+    { date: '2023-11-03', value: 6.5 },
+    { date: '2023-11-04', value: 9.0 },
+    { date: '2023-11-05', value: 8.5 },
+  ];
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       {/* Header */}
@@ -80,20 +146,21 @@ const ProfessorDashboard = () => {
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <Card key={index} className="stat-card group cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-3xl font-bold mt-2">{stat.value}</p>
-                </div>
-                <div className={`${stat.bg} p-3 rounded-full group-hover:scale-110 transition-transform`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatsCard key={index} {...stat} />
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PerformanceChart
+          title="Frequência ao Longo do Tempo"
+          data={frequencyData}
+          valueLabel="Frequência (%)"
+        />
+        <PerformanceChart 
+          title="Média das Notas"
+          data={gradesData}
+          valueLabel="Nota"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

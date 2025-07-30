@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,58 +9,128 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { FileText } from 'lucide-react';
 
+interface Turma {
+  id: string;
+  nome: string;
+}
+
+interface Aluno {
+  id: string;
+  name: string;
+}
+
+interface Grade {
+  aluno_id: string;
+  turma_id: string;
+  professor_id: string;
+  nota: number;
+  data: string;
+}
+
 const GradeManager: React.FC = () => {
-  const [turmaId, setTurmaId] = useState('');
-  const [alunoId, setAlunoId] = useState('');
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [selectedTurma, setSelectedTurma] = useState('');
+  const [selectedAluno, setSelectedAluno] = useState('');
   const [nota, setNota] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const handleSubmitGrade = async () => {
-    if (!turmaId || !alunoId || !nota || !user) return;
+  // Buscar turmas do professor
+  useEffect(() => {
+    const fetchTurmas = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('turmas')
+        .select('id, nome')
+        .eq('professor_id', user.id);
 
-    const notaNum = parseFloat(nota);
-    if (notaNum < 0 || notaNum > 10) {
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar turmas",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setTurmas(data || []);
+    };
+
+    fetchTurmas();
+  }, [user]);
+
+  // Buscar alunos quando selecionar turma
+  useEffect(() => {
+    const fetchAlunos = async () => {
+      if (!selectedTurma) return;
+
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('id, name')
+        .eq('turma_id', selectedTurma);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar alunos",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setAlunos(data || []);
+    };
+
+    fetchAlunos();
+  }, [selectedTurma]);
+
+  const handleSubmit = async () => {
+    if (!selectedTurma || !selectedAluno || !nota) {
       toast({
-        title: "Erro",
-        description: "A nota deve estar entre 0 e 10",
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos",
         variant: "destructive"
       });
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('notas')
-        .insert({
-          aluno_id: alunoId,
-          materia_id: 'mat1', // Exemplo - seria dinâmico
-          nota: notaNum,
-          observacoes: 'Nota lançada pelo professor'
-        });
+      const notaNum = parseFloat(nota);
+      if (isNaN(notaNum) || notaNum < 0 || notaNum > 10) {
+        throw new Error('A nota deve ser um número entre 0 e 10');
+      }
+
+      const grade: Grade = {
+        aluno_id: selectedAluno,
+        turma_id: selectedTurma,
+        professor_id: user?.id || '',
+        nota: notaNum,
+        data: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from('notas').insert(grade);
 
       if (error) throw error;
 
       toast({
-        title: "Nota lançada",
-        description: "Nota registrada com sucesso!"
+        title: "Sucesso",
+        description: "Nota lançada com sucesso!"
       });
-      
-      // Limpar formulário
-      setTurmaId('');
-      setAlunoId('');
+
+      setSelectedAluno('');
       setNota('');
-    } catch (error) {
-      console.error('Error submitting grade:', error);
+      
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Erro ao lançar nota",
+        description: error.message || "Erro ao lançar nota",
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -73,59 +142,66 @@ const GradeManager: React.FC = () => {
           Lançar Notas
         </Button>
       </DialogTrigger>
+      
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Lançar Notas</DialogTitle>
         </DialogHeader>
+
         <div className="space-y-4">
           <div>
-            <Label htmlFor="turma">Turma</Label>
-            <Select value={turmaId} onValueChange={setTurmaId}>
+            <Label>Turma</Label>
+            <Select value={selectedTurma} onValueChange={setSelectedTurma}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a turma" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="turma1">3º Ano A</SelectItem>
-                <SelectItem value="turma2">2º Ano B</SelectItem>
-                <SelectItem value="turma3">1º Ano C</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label htmlFor="aluno">Aluno</Label>
-            <Select value={alunoId} onValueChange={setAlunoId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o aluno" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aluno1">João Silva</SelectItem>
-                <SelectItem value="aluno2">Maria Santos</SelectItem>
-                <SelectItem value="aluno3">Pedro Costa</SelectItem>
+                {turmas.map(turma => (
+                  <SelectItem key={turma.id} value={turma.id}>
+                    {turma.nome}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
+          {selectedTurma && (
+            <div>
+              <Label>Aluno</Label>
+              <Select value={selectedAluno} onValueChange={setSelectedAluno}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o aluno" />
+                </SelectTrigger>
+                <SelectContent>
+                  {alunos.map(aluno => (
+                    <SelectItem key={aluno.id} value={aluno.id}>
+                      {aluno.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
-            <Label htmlFor="nota">Nota (0-10)</Label>
+            <Label>Nota (0-10)</Label>
             <Input
-              id="nota"
               type="number"
+              step="0.1"
               min="0"
               max="10"
-              step="0.1"
               value={nota}
-              onChange={(e) => setNota(e.target.value)}
+              onChange={e => setNota(e.target.value)}
               placeholder="Digite a nota"
             />
           </div>
 
           <Button 
-            onClick={handleSubmitGrade} 
-            disabled={!turmaId || !alunoId || !nota || isSubmitting}
+            onClick={handleSubmit}
+            disabled={isLoading || !selectedTurma || !selectedAluno || !nota}
             className="w-full"
           >
-            {isSubmitting ? 'Lançando...' : 'Lançar Nota'}
+            {isLoading ? "Salvando..." : "Salvar Nota"}
           </Button>
         </div>
       </DialogContent>

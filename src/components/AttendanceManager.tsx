@@ -1,74 +1,114 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './AuthContext';
-import { CheckCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { QrCode, UserCheck } from 'lucide-react';
 
-interface Student {
+interface Turma {
   id: string;
-  name: string;
-  present: boolean;
+  nome: string;
 }
 
-const AttendanceManager: React.FC = () => {
-  const [turmaId, setTurmaId] = useState('');
-  const [students, setStudents] = useState<Student[]>([
-    { id: '1', name: 'João Silva', present: false },
-    { id: '2', name: 'Maria Santos', present: false },
-    { id: '3', name: 'Pedro Costa', present: false },
-    { id: '4', name: 'Ana Oliveira', present: false },
-  ]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+interface Materia {
+  id: string;
+  nome: string;
+}
+
+const AttendanceManager = () => {
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [selectedTurma, setSelectedTurma] = useState('');
+  const [selectedMateria, setSelectedMateria] = useState('');
+  const [qrCodeValue, setQrCodeValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleAttendanceChange = (studentId: string, present: boolean) => {
-    setStudents(prev => 
-      prev.map(student => 
-        student.id === studentId ? { ...student, present } : student
-      )
-    );
+  useEffect(() => {
+    fetchTurmasAndMaterias();
+  }, []);
+
+  const fetchTurmasAndMaterias = async () => {
+    try {
+      // Buscar turmas
+      const { data: turmasData } = await supabase
+        .from('turmas')
+        .select('id, nome');
+      
+      // Buscar matérias
+      const { data: materiasData } = await supabase
+        .from('materias')
+        .select('id, nome');
+
+      if (turmasData) setTurmas(turmasData);
+      if (materiasData) setMaterias(materiasData);
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+    }
   };
 
-  const handleSubmitAttendance = async () => {
-    if (!turmaId || !user) return;
+  const generateQRCode = async () => {
+    if (!selectedTurma || !selectedMateria) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione uma turma e uma matéria",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
-      const attendanceRecords = students.map(student => ({
-        aluno_id: student.id,
-        turma_id: turmaId,
-        materia_id: 'mat1', // Exemplo - seria dinâmico
-        data_aula: new Date().toISOString().split('T')[0],
-        presente: student.present
-      }));
+      const code = `${selectedTurma}-${selectedMateria}-${Date.now()}`;
+      
+      // Verificar se já existe QR code ativo para esta aula
+      const { data: existingQR } = await supabase
+        .from('qr_codes_presenca')
+        .select('*')
+        .eq('turma_id', selectedTurma)
+        .eq('materia_id', selectedMateria)
+        .eq('data_aula', new Date().toISOString().split('T')[0])
+        .eq('ativo', true)
+        .single();
 
-      const { error } = await supabase
-        .from('presencas')
-        .upsert(attendanceRecords, {
-          onConflict: 'aluno_id,materia_id,turma_id,data_aula'
+      if (existingQR) {
+        toast({
+          title: "QR Code já existe",
+          description: "Já existe um QR Code ativo para esta aula hoje",
+          variant: "destructive"
         });
+        return;
+      }
+
+      // Criar novo QR code
+      const { error } = await supabase.from('qr_codes_presenca').insert({
+        codigo: code,
+        turma_id: selectedTurma,
+        materia_id: selectedMateria,
+        data_aula: new Date().toISOString(),
+        ativo: true,
+        expires_at: new Date(Date.now() + 30 * 60000).toISOString() // Expira em 30 minutos
+      });
 
       if (error) throw error;
 
+      setQrCodeValue(code);
       toast({
-        title: "Presença registrada",
-        description: "Frequência salva com sucesso!"
+        title: "QR Code gerado",
+        description: "QR Code gerado com sucesso! Expira em 30 minutos.",
       });
-    } catch (error) {
-      console.error('Error submitting attendance:', error);
+
+    } catch (error: any) {
+      console.error('Error:', error);
       toast({
         title: "Erro",
-        description: "Erro ao registrar presença",
+        description: "Erro ao gerar QR Code. Tente novamente.",
         variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -76,53 +116,67 @@ const AttendanceManager: React.FC = () => {
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full justify-start">
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Registrar Presença
+          <UserCheck className="h-4 w-4 mr-2" />
+          Controle de Presença
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Registrar Presença</DialogTitle>
+          <DialogTitle>Gerar QR Code para Presença</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <Select value={turmaId} onValueChange={setTurmaId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a turma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="turma1">3º Ano A</SelectItem>
-              <SelectItem value="turma2">2º Ano B</SelectItem>
-              <SelectItem value="turma3">1º Ano C</SelectItem>
-            </SelectContent>
-          </Select>
 
-          {turmaId && (
-            <div className="space-y-3">
-              <h4 className="font-medium">Marcar presença dos alunos:</h4>
-              {students.map(student => (
-                <div key={student.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={student.id}
-                    checked={student.present}
-                    onCheckedChange={(checked) => 
-                      handleAttendanceChange(student.id, checked as boolean)
-                    }
-                  />
-                  <label htmlFor={student.id} className="text-sm">
-                    {student.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Turma</Label>
+            <Select value={selectedTurma} onValueChange={setSelectedTurma}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a turma" />
+              </SelectTrigger>
+              <SelectContent>
+                {turmas.map((turma) => (
+                  <SelectItem key={turma.id} value={turma.id}>
+                    {turma.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Button 
-            onClick={handleSubmitAttendance} 
-            disabled={!turmaId || isSubmitting}
+          <div className="space-y-2">
+            <Label>Matéria</Label>
+            <Select value={selectedMateria} onValueChange={setSelectedMateria}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a matéria" />
+              </SelectTrigger>
+              <SelectContent>
+                {materias.map((materia) => (
+                  <SelectItem key={materia.id} value={materia.id}>
+                    {materia.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            onClick={generateQRCode}
+            disabled={isLoading || !selectedTurma || !selectedMateria}
             className="w-full"
           >
-            {isSubmitting ? 'Salvando...' : 'Salvar Presença'}
+            {isLoading ? 'Gerando...' : 'Gerar QR Code'}
+            <QrCode className="h-4 w-4 ml-2" />
           </Button>
+
+          {qrCodeValue && (
+            <div className="mt-4 p-4 border rounded">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrCodeValue}`}
+                alt="QR Code para presença"
+                className="mx-auto"
+              />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

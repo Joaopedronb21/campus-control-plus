@@ -1,45 +1,29 @@
-
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
+import { useToast } from './ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { ScrollArea } from './ui/scroll-area';
 import { BookUser, Trash2 } from 'lucide-react';
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface Subject {
-  id: string;
-  nome: string;
-  codigo: string;
-}
-
-interface StudentSubject {
-  id: string;
-  aluno_id: string;
-  materia_id: string;
-  student_name: string;
-  subject_name: string;
-}
+import { Badge } from './ui/badge';
 
 const StudentSubjectManager: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [studentSubjects, setStudentSubjects] = useState<StudentSubject[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [studentSubjects, setStudentSubjects] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [user]);
 
   const fetchData = async () => {
     try {
@@ -49,17 +33,49 @@ const StudentSubjectManager: React.FC = () => {
         .select('id, name, email')
         .eq('role', 'aluno');
 
-      // Buscar matérias
-      const { data: subjectsData } = await supabase
-        .from('materias')
-        .select('id, nome, codigo');
+      if (!user?.id) {
+        setStudents(studentsData || []);
+        setSubjects([]);
+        return;
+      }
 
-      // Buscar vínculos existentes usando uma query personalizada
-      // Como não temos a tabela aluno_materias nos tipos, vamos usar uma abordagem alternativa
-      // Por enquanto, vamos mostrar uma mensagem que a funcionalidade está sendo implementada
-      
+      // Buscar matérias e notas do aluno
+      const { data: enrollments, error } = await supabase
+        .from('materias')
+        .select(`
+          id,
+          nome,
+          codigo,
+          notas(nota),
+          presencas(presente)
+        `)
+        .eq('presencas.aluno_id', user.id);
+
+      if (error) throw error;
+
+      const processedSubjects = enrollments?.map(subject => {
+        const notas = subject.notas || [];
+        const presencas = subject.presencas || [];
+        
+        // Calcular média das notas
+        const mediaNotas = notas.reduce((acc, curr) => acc + curr.nota, 0) / (notas.length || 1);
+        
+        // Calcular frequência
+        const totalAulas = presencas.length;
+        const aulasPresente = presencas.filter(p => p.presente).length;
+        const frequencia = (aulasPresente / totalAulas) * 100;
+
+        return {
+          id: subject.id,
+          nome: subject.nome,
+          codigo: subject.codigo,
+          nota: Number(mediaNotas.toFixed(2)),
+          frequencia: Number(frequencia.toFixed(2))
+        };
+      }) || [];
+
       setStudents(studentsData || []);
-      setSubjects(subjectsData || []);
+      setSubjects(processedSubjects);
       setStudentSubjects([]); // Temporariamente vazio até os tipos serem atualizados
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -116,6 +132,10 @@ const StudentSubjectManager: React.FC = () => {
       });
     }
   };
+
+  if (isLoading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <Dialog>
@@ -202,14 +222,46 @@ const StudentSubjectManager: React.FC = () => {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))
-              )}
+                )))
+              }
+
             </div>
+          </div>
+
+          {/* Matérias e Notas do Aluno */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Minhas Matérias e Notas</h3>
+            
+            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+              <div className="grid gap-4">
+                {subjects.map((subject) => (
+                  <Card key={subject.id}>
+                    <CardHeader>
+                      <CardTitle>{subject.nome}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex justify-between items-center">
+                        <div className="space-y-1">
+                          <p className="text-sm">Código: {subject.codigo}</p>
+                          <div className="flex gap-2">
+                            <Badge variant={subject.nota >= 7 ? "default" : "destructive"}>
+                              Média: {subject.nota}
+                            </Badge>
+                            <Badge variant={subject.frequencia >= 75 ? "default" : "destructive"}>
+                              Frequência: {subject.frequencia}%
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
-
 export default StudentSubjectManager;

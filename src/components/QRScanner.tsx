@@ -1,114 +1,159 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
-import { QrCode } from 'lucide-react';
+import { findQRCode, createPresenca } from '@/lib/db/models';
 
-const QRScanner: React.FC = () => {
-  const [qrCode, setQrCode] = useState('');
+interface QRScannerProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface QRCodeData {
+  id: string;
+  codigo: string;
+  materia_id: string;
+  turma_id: string;
+  data_aula: string;
+  ativo: boolean;
+}
+
+const QRScanner: React.FC<QRScannerProps> = ({ isOpen, onClose }) => {
   const [isScanning, setIsScanning] = useState(false);
-  const { user } = useAuth();
+  const qrRef = useRef<Html5Qrcode | null>(null);
+  const scanTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleScanQR = async () => {
-    if (!qrCode || !user) return;
+  useEffect(() => {
+    if (isOpen) {
+      startScanner();
+    } else {
+      stopScanner();
+    }
 
-    setIsScanning(true);
+    return () => {
+      stopScanner();
+      if (scanTimeoutRef.current) {
+        clearTimeout(scanTimeoutRef.current);
+      }
+    };
+  }, [isOpen]);
+
+  const startScanner = async () => {
     try {
-      // Verificar se o QR Code existe e está ativo
-      const { data: qrData, error: qrError } = await supabase
-        .from('qr_codes_presenca')
-        .select('*')
-        .eq('codigo', qrCode)
-        .eq('ativo', true)
-        .gt('expires_at', new Date().toISOString())
-        .single();
-
-      if (qrError || !qrData) {
-        toast({
-          title: "QR Code inválido",
-          description: "QR Code não encontrado ou expirado",
-          variant: "destructive"
-        });
-        return;
+      if (qrRef.current) {
+        await stopScanner();
       }
 
-      // Registrar presença
-      const { error: presencaError } = await supabase
-        .from('presencas')
-        .upsert({
-          aluno_id: user.id,
-          turma_id: qrData.turma_id,
-          materia_id: qrData.materia_id,
-          data_aula: qrData.data_aula,
-          presente: true,
-          qr_code_usado: true
-        }, {
-          onConflict: 'aluno_id,materia_id,turma_id,data_aula'
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      qrRef.current = html5QrCode;
+
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1,
+          disableFlip: false,
+          //formats: [Html5QrcodeSupportedFormats.QR_CODE]
+        },
+        handleScanSuccess,
+        handleScanError
+      );
+
+      // Timeout após 2 minutos
+      scanTimeoutRef.current = setTimeout(() => {
+        stopScanner();
+        toast({
+          title: "Tempo expirado",
+          description: "Por favor tente novamente",
+          variant: "destructive"
         });
+      }, 120000);
 
-      if (presencaError) throw presencaError;
-
-      toast({
-        title: "Presença confirmada",
-        description: "Sua presença foi registrada com sucesso!"
-      });
-      
-      setQrCode('');
-    } catch (error) {
-      console.error('Error scanning QR code:', error);
+    } catch (err) {
+      console.error("Error starting scanner:", err);
       toast({
         title: "Erro",
-        description: "Erro ao registrar presença",
+        description: "Não foi possível iniciar o scanner. Verifique se permitiu acesso à câmera.",
         variant: "destructive"
       });
+    }
+  };
+
+  const stopScanner = async () => {
+    if (qrRef.current) {
+      try {
+        await qrRef.current.stop();
+        qrRef.current = null;
+      } catch (err) {
+        console.error("Error stopping scanner:", err);
+      }
+    }
+  };
+
+  const handleScanSuccess = async (decodedText: string) => {
+    if (isScanning) return; // Previne múltiplos scans
+    
+    setIsScanning(true);
+    try {
+      await stopScanner();
+      
+      const qrCode = await findQRCode(decodedText);
+      if (!qrCode || !qrCode.ativo) {
+        throw new Error('QR Code inválido ou expirado');
+      }
+
+      if (!user?.id) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      await createPresenca({
+        aluno_id: user.id,
+        materia_id: qrCode.materia_id,
+        turma_id: qrCode.turma_id,
+        data_aula: qrCode.data_aula,
+        presente: true
+      });
+
+      toast({
+        title: "Sucesso",
+        description: "Presença registrada com sucesso!"
+      });
+
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Erro", 
+        description: error.message || "Erro ao processar QR Code"
+      });
+      startScanner(); // Reinicia o scanner em caso de erro
     } finally {
       setIsScanning(false);
     }
   };
 
+  const handleScanError = (error: any) => {
+    // Ignora erros de leitura normais
+    if (error?.message?.includes('NotFound')) return;
+    console.error("Error scanning:", error);
+  };
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="school-button">
-          <QrCode className="h-4 w-4 mr-2" />
-          Registrar Presença
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Escanear QR Code</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-            <QrCode className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 mb-4">
-              Digite o código QR ou escaneie com a câmera
-            </p>
+        
+        <div className="mt-4">
+          <div id="qr-reader" style={{ width: '100%' }} />
+          <div className="mt-4">
+            <Button onClick={onClose} className="w-full">Fechar</Button>
           </div>
-
-          <div>
-            <Label htmlFor="qrcode">Código QR</Label>
-            <Input
-              id="qrcode"
-              value={qrCode}
-              onChange={(e) => setQrCode(e.target.value)}
-              placeholder="Digite ou cole o código aqui"
-            />
-          </div>
-
-          <Button 
-            onClick={handleScanQR} 
-            disabled={!qrCode || isScanning}
-            className="w-full"
-          >
-            {isScanning ? 'Registrando...' : 'Confirmar Presença'}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
