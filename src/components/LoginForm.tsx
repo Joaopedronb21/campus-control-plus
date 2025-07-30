@@ -182,6 +182,11 @@ const LoginForm = () => {
                 <strong>Dica:</strong> Após preencher os campos, clique em "Entrar" para fazer login.
               </p>
             </div>
+            <div className="mt-2 p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-700">
+                <strong>Novo usuário?</strong> Clique em "Criar conta" abaixo para se cadastrar no sistema.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

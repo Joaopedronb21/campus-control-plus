@@ -7,9 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 import { mockApi } from '@/lib/mock-api';
 import { Users, BookOpen, GraduationCap, BarChart3, Calendar, Bell, Settings, FileText, PlusCircle } from 'lucide-react';
 import UserManager from './UserManager';
+import UserList from './UserList';
 import StudentSubjectManager from './StudentSubjectManager';
 import ProfessorSubjectManager from './ProfessorSubjectManager';
 import ReportsManager from './ReportsManager';
+import Navbar from './Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AdminDashboard: React.FC = () => {
@@ -73,13 +75,15 @@ const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-          <p className="text-gray-600 mt-2">Gerencie todos os aspectos do sistema escolar</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
+            <p className="text-gray-600 mt-2">Gerencie todos os aspectos do sistema escolar</p>
+          </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -115,6 +119,7 @@ const AdminDashboard: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <UserManager />
+              <UserList />
             </CardContent>
           </Card>
 
@@ -230,6 +235,7 @@ const AdminDashboard: React.FC = () => {
         <div>
           <p>Bem-vindo ao painel administrativo. Use os botões acima para cadastrar matérias e turmas.</p>
         </div>
+      </div>
       </div>
     </div>
   );

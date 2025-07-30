@@ -1,6 +1,8 @@
 // Mock implementation for browser compatibility
 // In a real application, these would call a backend API
 
+import { mockApi } from '../mock-api';
+
 export async function createUser(data: {
   email: string;
   password: string;
@@ -12,7 +14,21 @@ export async function createUser(data: {
 }
 
 export async function findUserByEmail(email: string) {
-  // Mock users for testing
+  // First, try to find in mock-api users table
+  const dynamicUsersResult = await mockApi.select('users', 'id', { email });
+  
+  if (dynamicUsersResult.data && dynamicUsersResult.data.length > 0) {
+    const user = dynamicUsersResult.data[0];
+    return {
+      id: user.id,
+      email: user.email,
+      password: '$2b$10$mockHashedPassword', // Mock hashed password
+      name: user.name,
+      role: user.role
+    };
+  }
+
+  // Fallback to static mock users for testing
   const mockUsers = {
     'admin@escola.com': {
       id: '1',

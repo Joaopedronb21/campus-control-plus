@@ -18,6 +18,7 @@ import QRCodeGenerator from './QRCodeGenerator';
 import GradeManager from './GradeManager';
 import AttendanceManager from './AttendanceManager';
 import AttendanceList from './AttendanceList';
+import Navbar from './Navbar';
 import ReportsManager from './ReportsManager';
 import { StatsCard } from './dashboard/StatsCard';
 import { PerformanceChart } from './dashboard/PerformanceChart';
@@ -129,13 +130,15 @@ const ProfessorDashboard = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard do Professor</h1>
-          <p className="text-gray-600 mt-1">Gerencie suas turmas e atividades</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="p-6 space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard do Professor</h1>
+            <p className="text-gray-600 mt-1">Gerencie suas turmas e atividades</p>
+          </div>
         <div className="flex gap-2">
           <QRCodeGenerator />
           <Button variant="outline">
@@ -290,6 +293,7 @@ const ProfessorDashboard = () => {
             </Button>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

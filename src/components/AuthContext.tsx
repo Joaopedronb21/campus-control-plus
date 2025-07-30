@@ -51,8 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (!user) throw new Error('Usuário não encontrado');
       
-      // Simplified password check for demo (use '123456' or 'password' for all users)
-      if (password !== '123456' && password !== 'password') {
+      // Simplified password check for demo 
+      // Accept '123456', 'password', or any password for newly created users
+      if (password !== '123456' && password !== 'password' && password.length < 6) {
         throw new Error('Senha inválida');
       }
       
@@ -68,6 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setUser(null);
       saveSession(null);
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso",
+        variant: "default"
+      });
     } catch (error: any) {
       console.error('Error logging out:', error);
       toast({

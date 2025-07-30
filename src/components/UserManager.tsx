@@ -27,19 +27,58 @@ const UserManager: React.FC = () => {
       return;
     }
 
+    // Validação de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite um email válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validação de senha
+    if (password.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      // Verifica se já existe usuário com o mesmo e-mail
+      const existingUserResult = await mockApi.select('users', 'id', { email });
+      
+      if (existingUserResult.data && existingUserResult.data.length > 0) {
+        throw new Error('Já existe um usuário com este e-mail');
+      }
+
       // Simular criação de usuário
       const userId = Date.now().toString();
       
-      const result = await mockApi.insert('profiles', {
+      // Insere usuário na tabela users
+      const userResult = await mockApi.insert('users', {
         id: userId,
         name,
         email,
-        role
+        role: role as 'admin' | 'professor' | 'aluno'
       });
 
-      if (result.error) throw result.error;
+      if (userResult.error) throw userResult.error;
+
+      // Insere perfil na tabela profiles
+      const profileResult = await mockApi.insert('profiles', {
+        id: userId,
+        name,
+        email,
+        role: role as 'admin' | 'professor' | 'aluno'
+      });
+
+      if (profileResult.error) throw profileResult.error;
 
       toast({
         title: "Usuário criado",

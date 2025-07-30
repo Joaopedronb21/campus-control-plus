@@ -16,6 +16,7 @@ import {
 import QRScanner from './QRScanner';
 import QrCodeScanner from './QrCodeScanner';
 import StudentSubjectManager from './StudentSubjectManager';
+import Navbar from './Navbar';
 
 const AlunoDashboard = () => {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
@@ -62,21 +63,23 @@ const AlunoDashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meu Dashboard</h1>
-        <div className="flex gap-2">
-          <QRScanner 
-            isOpen={isQRScannerOpen} 
-            onClose={() => setIsQRScannerOpen(false)} 
-          />
-          <QrCodeScanner />
-          <StudentSubjectManager />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="p-6 space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Meu Dashboard</h1>
+          <div className="flex gap-2">
+            <QRScanner 
+              isOpen={isQRScannerOpen} 
+              onClose={() => setIsQRScannerOpen(false)} 
+            />
+            <QrCodeScanner />
+            <StudentSubjectManager />
+          </div>
+          </div>
         </div>
-        </div>
-      </div>
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -209,6 +212,7 @@ const AlunoDashboard = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

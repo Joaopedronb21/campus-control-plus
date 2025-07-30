@@ -31,28 +31,59 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
       return;
     }
 
+    // Validação de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite um email válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validação de senha
+    if (password.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Verifica se já existe usuário com o mesmo e-mail
-      const existingResult = await mockApi.select('profiles', 'id', { email });
-
-      if (existingResult.data && existingResult.data.length > 0) {
+      // Verifica se já existe usuário com o mesmo e-mail nos users
+      const existingUserResult = await mockApi.select('users', 'id', { email });
+      
+      if (existingUserResult.data && existingUserResult.data.length > 0) {
         throw new Error('Já existe um usuário com este e-mail');
       }
 
       // Simula criação de usuário autenticado
       const userId = Date.now().toString();
 
-      // Insere perfil do usuário na tabela profiles
-      const insertResult = await mockApi.insert('profiles', {
+      // Insere usuário na tabela users
+      const userInsertResult = await mockApi.insert('users', {
         id: userId,
         name,
         email,
-        role
+        role: role as 'admin' | 'professor' | 'aluno'
       });
 
-      if (insertResult.error) throw insertResult.error;
+      if (userInsertResult.error) throw userInsertResult.error;
+
+      // Insere perfil do usuário na tabela profiles
+      const profileInsertResult = await mockApi.insert('profiles', {
+        id: userId,
+        name,
+        email,
+        role: role as 'admin' | 'professor' | 'aluno'
+      });
+
+      if (profileInsertResult.error) throw profileInsertResult.error;
 
       toast({
         title: "Cadastro realizado",
