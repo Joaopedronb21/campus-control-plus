@@ -20,15 +20,3 @@ export default defineConfig({
     sourcemap: true,
   },
 });
-      "@mapbox/node-pre-gyp",
-      "mock-aws-s3",
-      "aws-sdk",
-      "nock",
-    ],
-  },
-  build: {
-    commonjsOptions: {
-      include: [],
-    },
-  },
-}));

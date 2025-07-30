@@ -112,46 +112,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
-    }
-  }
-
-  async function logout() {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+// export function useAuth() {
+//   const context = useContext(AuthContext);
+//   if (context === undefined) {
+//     throw new Error('useAuth must be used within an AuthProvider');
+//   }
+//   return context;
+// }
+//   async function logout() {
+//     try {
+//       const { error } = await supabase.auth.signOut();
+//       if (error) throw error;
       
-      setUser(null);
-      saveSession(null);
-    } catch (error: any) {
-      console.error('Error logging out:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao fazer logout",
-        variant: "destructive"
-      });
-    }
-  }
+//       setUser(null);
+//       saveSession(null);
+//     } catch (error: any) {
+//       console.error('Error logging out:', error);
+//       toast({
+//         title: "Erro",
+//         description: "Erro ao fazer logout",
+//         variant: "destructive"
+//       });
+//     }
+//   }
 
-  const value = {
-    user,
-    login,
-    logout,
-    loading
-  };
+//   const value = {
+//     user,
+//     login,
+//     logout,
+//     loading
+//   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+//   return (
+//     <AuthContext.Provider value={value}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// }
 
 export function useAuth() {
   const context = useContext(AuthContext);
