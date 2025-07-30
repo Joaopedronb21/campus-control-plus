@@ -1,12 +1,67 @@
-
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookOpen, GraduationCap, BarChart3, Calendar, Bell, Settings, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Users, BookOpen, GraduationCap, BarChart3, Calendar, Bell, Settings, FileText, PlusCircle } from 'lucide-react';
 import UserManager from './UserManager';
 import StudentSubjectManager from './StudentSubjectManager';
 import ProfessorSubjectManager from './ProfessorSubjectManager';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const AdminDashboard = () => {
+const AdminDashboard: React.FC = () => {
+  const { toast } = useToast();
+
+  // Matéria
+  const [materiaNome, setMateriaNome] = useState('');
+  const [materiaCodigo, setMateriaCodigo] = useState('');
+  const [isMateriaLoading, setIsMateriaLoading] = useState(false);
+
+  // Turma
+  const [turmaNome, setTurmaNome] = useState('');
+  const [turmaSerie, setTurmaSerie] = useState('');
+  const [isTurmaLoading, setIsTurmaLoading] = useState(false);
+
+  // Cadastro de matéria
+  const handleCreateMateria = async () => {
+    setIsMateriaLoading(true);
+    try {
+      const { error } = await supabase.from('materias').insert([
+        { nome: materiaNome, codigo: materiaCodigo }
+      ]);
+      if (error) {
+        toast({ title: "Erro", description: error.message || "Erro ao criar matéria", variant: "destructive" });
+      } else {
+        toast({ title: "Matéria criada", description: "Matéria cadastrada com sucesso!" });
+        setMateriaNome('');
+        setMateriaCodigo('');
+      }
+    } finally {
+      setIsMateriaLoading(false);
+    }
+  };
+
+  // Cadastro de turma
+  const handleCreateTurma = async () => {
+    setIsTurmaLoading(true);
+    try {
+      const { error } = await supabase.from('turmas').insert([
+        { nome: turmaNome, serie: turmaSerie }
+      ]);
+      if (error) {
+        toast({ title: "Erro", description: error.message || "Erro ao criar turma", variant: "destructive" });
+      } else {
+        toast({ title: "Turma criada", description: "Turma cadastrada com sucesso!" });
+        setTurmaNome('');
+        setTurmaSerie('');
+      }
+    } finally {
+      setIsTurmaLoading(false);
+    }
+  };
+
   const stats = [
     { title: 'Total de Alunos', value: '1,234', icon: Users, color: 'bg-blue-500' },
     { title: 'Professores', value: '87', icon: GraduationCap, color: 'bg-green-500' },
@@ -81,6 +136,60 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
+        <div className="flex gap-2 mb-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="school-button" variant="outline">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Criar Matéria
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Nova Matéria</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Nome da Matéria</Label>
+                  <Input value={materiaNome} onChange={e => setMateriaNome(e.target.value)} placeholder="Ex: Matemática" />
+                </div>
+                <div>
+                  <Label>Código</Label>
+                  <Input value={materiaCodigo} onChange={e => setMateriaCodigo(e.target.value)} placeholder="Ex: MAT101" />
+                </div>
+                <Button onClick={handleCreateMateria} disabled={isMateriaLoading} className="w-full">
+                  {isMateriaLoading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="school-button" variant="outline">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Criar Turma
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Nova Turma</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Nome da Turma</Label>
+                  <Input value={turmaNome} onChange={e => setTurmaNome(e.target.value)} placeholder="Ex: 3º Ano A" />
+                </div>
+                <div>
+                  <Label>Série</Label>
+                  <Input value={turmaSerie} onChange={e => setTurmaSerie(e.target.value)} placeholder="Ex: 3" />
+                </div>
+                <Button onClick={handleCreateTurma} disabled={isTurmaLoading} className="w-full">
+                  {isTurmaLoading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="school-card hover:shadow-lg transition-shadow cursor-pointer">
             <CardContent className="p-6 text-center">
@@ -113,6 +222,9 @@ const AdminDashboard = () => {
               <p className="text-sm text-gray-600">Gerenciar arquivos</p>
             </CardContent>
           </Card>
+        </div>
+        <div>
+          <p>Bem-vindo ao painel administrativo. Use os botões acima para cadastrar matérias e turmas.</p>
         </div>
       </div>
     </div>

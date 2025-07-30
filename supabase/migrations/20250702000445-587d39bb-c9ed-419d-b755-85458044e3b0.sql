@@ -1,7 +1,18 @@
+-- Criar tabela de usuários para autenticação própria
+CREATE TABLE public.usuarios (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  senha TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'professor', 'aluno')),
+  avatar TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Criar tabela de perfis de usuário
+-- Criar tabela de perfis de usuário (referencia usuarios)
 CREATE TABLE public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY REFERENCES public.usuarios(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'professor', 'aluno')),
@@ -31,7 +42,7 @@ CREATE TABLE public.turmas (
 -- Criar tabela de vínculos professor-matéria
 CREATE TABLE public.professor_materias (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  professor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  professor_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   materia_id UUID REFERENCES public.materias(id) ON DELETE CASCADE,
   turma_id UUID REFERENCES public.turmas(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -41,7 +52,7 @@ CREATE TABLE public.professor_materias (
 -- Criar tabela de vínculos aluno-turma
 CREATE TABLE public.aluno_turmas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  aluno_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  aluno_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   turma_id UUID REFERENCES public.turmas(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(aluno_id, turma_id)
@@ -55,7 +66,7 @@ CREATE TABLE public.provas (
   data_prova TIMESTAMP WITH TIME ZONE NOT NULL,
   materia_id UUID REFERENCES public.materias(id) ON DELETE CASCADE,
   turma_id UUID REFERENCES public.turmas(id) ON DELETE CASCADE,
-  professor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  professor_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   valor DECIMAL(5,2) DEFAULT 10.0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -63,7 +74,7 @@ CREATE TABLE public.provas (
 -- Criar tabela de notas
 CREATE TABLE public.notas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  aluno_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  aluno_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   prova_id UUID REFERENCES public.provas(id) ON DELETE CASCADE,
   materia_id UUID REFERENCES public.materias(id) ON DELETE CASCADE,
   nota DECIMAL(5,2) NOT NULL CHECK (nota >= 0 AND nota <= 10),
@@ -75,7 +86,7 @@ CREATE TABLE public.notas (
 -- Criar tabela de presenças
 CREATE TABLE public.presencas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  aluno_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  aluno_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   materia_id UUID REFERENCES public.materias(id) ON DELETE CASCADE,
   turma_id UUID REFERENCES public.turmas(id) ON DELETE CASCADE,
   data_aula DATE NOT NULL,
@@ -92,7 +103,7 @@ CREATE TABLE public.qr_codes_presenca (
   codigo TEXT UNIQUE NOT NULL,
   materia_id UUID REFERENCES public.materias(id) ON DELETE CASCADE,
   turma_id UUID REFERENCES public.turmas(id) ON DELETE CASCADE,
-  professor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  professor_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   data_aula DATE NOT NULL,
   ativo BOOLEAN DEFAULT true,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -105,7 +116,7 @@ CREATE TABLE public.avisos (
   titulo TEXT NOT NULL,
   mensagem TEXT NOT NULL,
   tipo TEXT NOT NULL CHECK (tipo IN ('prova', 'aviso', 'trabalho', 'geral')),
-  autor_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  autor_id UUID REFERENCES public.usuarios(id) ON DELETE CASCADE,
   turma_id UUID REFERENCES public.turmas(id),
   materia_id UUID REFERENCES public.materias(id),
   data_publicacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -207,26 +218,6 @@ CREATE POLICY "Professors and admins can manage avisos" ON public.avisos FOR ALL
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
--- Função para criar perfil automaticamente após cadastro
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, name, email, role)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'name', NEW.email),
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'aluno')
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Trigger para criar perfil automaticamente
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
 -- Inserir dados de exemplo
 INSERT INTO public.materias (nome, codigo, descricao) VALUES
 ('Matemática', 'MAT001', 'Matemática fundamental e avançada'),
@@ -245,3 +236,14 @@ INSERT INTO public.turmas (nome, serie, ano_letivo) VALUES
 ('Turma B', '2º Ano', 2024),
 ('Turma A', '3º Ano', 2024),
 ('Turma B', '3º Ano', 2024);
+
+-- Desabilita a exigência de confirmação de e-mail para login (redundância para garantir em todas as migrações)
+update auth.config set require_email_confirmation = false;
+('Turma B', '1º Ano', 2024),
+('Turma A', '2º Ano', 2024),
+('Turma B', '2º Ano', 2024),
+('Turma A', '3º Ano', 2024),
+('Turma B', '3º Ano', 2024);
+
+-- Desabilita a exigência de confirmação de e-mail para login (redundância para garantir em todas as migrações)
+update auth.config set require_email_confirmation = false;

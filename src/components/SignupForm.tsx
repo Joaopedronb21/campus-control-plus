@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { UserPlus, Mail, Lock, User } from 'lucide-react';
 
 interface SignupFormProps {
   onBackToLogin: () => void;
@@ -23,7 +21,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !password || !role) {
       toast({
         title: "Erro",
@@ -34,17 +32,36 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
     }
 
     setIsLoading(true);
-    
+
     try {
-      const { error } = await supabase.auth.signUp({
+      // Verifica se já existe usuário com o mesmo e-mail
+      const { data: existing, error: fetchError } = await supabase
+        .from('profiles') // Use your actual user table name
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existing) {
+        throw new Error('Já existe um usuário com este e-mail');
+      }
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      // Cria novo usuário autenticado
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          data: {
-            name,
-            role
-          }
-        }
+        password
+      });
+
+      if (signUpError) throw signUpError;
+
+      // Insere perfil do usuário na tabela profiles
+      const { error } = await supabase.from('profiles').insert({
+        name,
+        email,
+        role,
+        id: signUpData.user?.id // Relaciona o perfil ao usuário autenticado
       });
 
       if (error) throw error;
@@ -53,12 +70,10 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
         title: "Cadastro realizado",
         description: "Conta criada com sucesso! Você pode fazer login agora."
       });
-      
       onBackToLogin();
     } catch (error: any) {
-      console.error('Signup error:', error);
       toast({
-        title: "Erro no cadastro",
+        title: "Erro ao cadastrar",
         description: error.message,
         variant: "destructive"
       });
@@ -80,51 +95,45 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
           <div className="space-y-2">
             <Label htmlFor="name">Nome Completo</Label>
             <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 id="name"
                 type="text"
                 placeholder="Seu nome completo"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="pl-10"
+                className="pl-2"
                 required
               />
             </div>
           </div>
-          
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="pl-2"
                 required
               />
             </div>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
+                className="pl-2"
                 required
               />
             </div>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="role">Tipo de Usuário</Label>
             <Select value={role} onValueChange={setRole}>
@@ -138,19 +147,16 @@ const SignupForm: React.FC<SignupFormProps> = ({ onBackToLogin }) => {
               </SelectContent>
             </Select>
           </div>
-
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full school-button"
             disabled={isLoading}
           >
-            <UserPlus className="h-4 w-4 mr-2" />
             {isLoading ? 'Criando conta...' : 'Criar Conta'}
           </Button>
-
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             className="w-full"
             onClick={onBackToLogin}
           >
